@@ -10,6 +10,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { VictoryBar, VictoryChart, VictoryTheme, VictoryAxis, VictoryLine } from 'victory-native';
 import { getHabits, getEntries } from '../utils/storage';
 import { calculateStreak, calculateLongestStreak, getWeeklyCompletionRate } from '../utils/streakCalculator';
+import { trackEvent, AnalyticsEvents } from '../utils/analytics';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -62,6 +63,7 @@ export default function InsightsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadInsights();
+      trackEvent(AnalyticsEvents.INSIGHTS_VIEWED);
     }, [])
   );
 
