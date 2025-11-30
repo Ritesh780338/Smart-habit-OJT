@@ -1,14 +1,25 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import HomeScreen from './src/screens/HomeScreen';
 import AddHabitScreen from './src/screens/AddHabitScreen';
 import EditHabitScreen from './src/screens/EditHabitScreen';
 import InsightsScreen from './src/screens/InsightsScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
+import { requestNotificationPermissions } from './src/utils/notifications';
+import { trackEvent, AnalyticsEvents } from './src/utils/analytics';
 
 const Stack = createStackNavigator();
 
 export default function App() {
+  useEffect(() => {
+    // Request notification permissions on app start
+    requestNotificationPermissions();
+    
+    // Track app opened
+    trackEvent(AnalyticsEvents.APP_OPENED);
+  }, []);
+
   return (
     <NavigationContainer>
       <Stack.Navigator
@@ -38,6 +49,11 @@ export default function App() {
           name="Insights" 
           component={InsightsScreen}
           options={{ title: 'Weekly Insights' }}
+        />
+        <Stack.Screen 
+          name="Settings" 
+          component={SettingsScreen}
+          options={{ title: 'Settings' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
