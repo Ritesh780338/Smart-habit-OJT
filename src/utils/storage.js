@@ -1,4 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { scheduleHabitReminder, cancelHabitNotifications } from './notifications';
+import { trackEvent, AnalyticsEvents } from './analytics';
 
 const HABITS_KEY = '@habits';
 const ENTRIES_KEY = '@entries';
@@ -14,6 +16,27 @@ export const saveHabit = async (habit) => {
     };
     habits.push(newHabit);
     await AsyncStorage.setItem(HABITS_KEY, JSON.stringify(habits));
+    
+    // Schedule notification if reminder time is set
+    if (newHabit.reminderTime) {
+      const notificationId = await scheduleHabitReminder(
+        newHabit.id,
+        newHabit.title,
+        newHabit.reminderTime
+      );
+      if (notificationId) {
+        newHabit.notificationId = notificationId;
+        await AsyncStorage.setItem(HABITS_KEY, JSON.stringify(habits));
+      }
+    }
+    
+    // Track analytics
+    await trackEvent(AnalyticsEvents.HABIT_CREATED, {
+      habitId: newHabit.id,
+      frequency: newHabit.frequency,
+      hasReminder: !!newHabit.reminderTime,
+    });
+    
     return newHabit;
   } catch (error) {
     console.error('Error saving habit:', error);
@@ -36,8 +59,32 @@ export const updateHabit = async (id, updatedHabit) => {
     const habits = await getHabits();
     const index = habits.findIndex(h => h.id === id);
     if (index !== -1) {
-      habits[index] = { ...habits[index], ...updatedHabit };
+      const oldHabit = habits[index];
+      habits[index] = { ...oldHabit, ...updatedHabit };
+      
+      // Update notification if reminder time changed
+      if (oldHabit.reminderTime !== updatedHabit.reminderTime) {
+        await cancelHabitNotifications(id);
+        if (updatedHabit.reminderTime) {
+          const notificationId = await scheduleHabitReminder(
+            id,
+            updatedHabit.title || oldHabit.title,
+            updatedHabit.reminderTime
+          );
+          if (notificationId) {
+            habits[index].notificationId = notificationId;
+          }
+        }
+      }
+      
       await AsyncStorage.setItem(HABITS_KEY, JSON.stringify(habits));
+      
+      // Track analytics
+      await trackEvent(AnalyticsEvents.HABIT_EDITED, {
+        habitId: id,
+        changedReminder: oldHabit.reminderTime !== updatedHabit.reminderTime,
+      });
+      
       return habits[index];
     }
     throw new Error('Habit not found');
@@ -52,6 +99,10 @@ export const deleteHabit = async (id) => {
     console.log('Deleting habit with id:', id);
     const habits = await getHabits();
     console.log('Current habits:', habits.length);
+    
+    // Cancel notifications
+    await cancelHabitNotifications(id);
+    
     const filtered = habits.filter(h => h.id !== id);
     console.log('Filtered habits:', filtered.length);
     await AsyncStorage.setItem(HABITS_KEY, JSON.stringify(filtered));
@@ -60,6 +111,10 @@ export const deleteHabit = async (id) => {
     const entries = await getEntries();
     const filteredEntries = entries.filter(e => e.habitId !== id);
     await AsyncStorage.setItem(ENTRIES_KEY, JSON.stringify(filteredEntries));
+    
+    // Track analytics
+    await trackEvent(AnalyticsEvents.HABIT_DELETED, { habitId: id });
+    
     console.log('Habit deleted successfully');
     return true;
   } catch (error) {
@@ -80,6 +135,24 @@ export const saveEntry = async (habitId) => {
     };
     entries.push(newEntry);
     await AsyncStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+    
+    // Track analytics
+    const habitEntries = entries.filter(e => e.habitId === habitId);
+    const streak = habitEntries.length;
+    
+    await trackEvent(AnalyticsEvents.HABIT_COMPLETED, {
+      habitId,
+      currentStreak: streak,
+    });
+    
+    // Track streak milestones
+    if ([7, 30, 100, 365].includes(streak)) {
+      await trackEvent(AnalyticsEvents.STREAK_MILESTONE, {
+        habitId,
+        milestone: streak,
+      });
+    }
+    
     return newEntry;
   } catch (error) {
     console.error('Error saving entry:', error);
