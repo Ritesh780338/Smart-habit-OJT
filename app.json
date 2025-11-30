@@ -16,7 +16,11 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ritesh.smarthabitcoach"
+      "bundleIdentifier": "com.ritesh.smarthabitcoach",
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,10 +28,12 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.ritesh.smarthabitcoach",
+      "versionCode": 1,
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
-        "SCHEDULE_EXACT_ALARM"
+        "SCHEDULE_EXACT_ALARM",
+        "POST_NOTIFICATIONS"
       ]
     },
     "web": {
