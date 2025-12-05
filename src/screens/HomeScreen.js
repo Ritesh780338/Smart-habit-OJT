@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
-  Animated,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getHabits, deleteHabit, saveEntry, getEntriesForHabit } from '../utils/storage';
 import { calculateStreak, isCompletedToday } from '../utils/streakCalculator';
 
@@ -17,6 +17,41 @@ export default function HomeScreen({ navigation }) {
   const [habits, setHabits] = useState([]);
   const [habitStats, setHabitStats] = useState({});
   const [refreshing, setRefreshing] = useState(false);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={handleLogout}
+          style={{ marginRight: 16 }}
+        >
+          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>Logout</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.setItem('@isLoggedIn', 'false');
+              navigation.replace('Login');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to logout');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const loadHabits = async () => {
     try {
