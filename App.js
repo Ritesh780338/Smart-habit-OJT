@@ -8,6 +8,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import AddHabitScreen from './src/screens/AddHabitScreen';
 import EditHabitScreen from './src/screens/EditHabitScreen';
 import InsightsScreen from './src/screens/InsightsScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
 
 const Stack = createStackNavigator();
 
@@ -70,6 +71,11 @@ export default function App() {
           name="Insights" 
           component={InsightsScreen}
           options={{ title: 'Weekly Insights' }}
+        />
+        <Stack.Screen 
+          name="Settings" 
+          component={SettingsScreen}
+          options={{ title: 'Settings' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
